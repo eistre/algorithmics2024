@@ -1,61 +1,50 @@
-import asyncio
-import aiohttp
-from typing import List, Tuple, Optional
-from geopy.geocoders import Nominatim
-from geopy.adapters import AioHTTPAdapter
+import os
+import openrouteservice
+from typing import Optional
+from dotenv import load_dotenv
 
-async def get_location_for_city(city: str, locator: Nominatim) -> Optional[Tuple[str, float, float]]:
-    try:
-        # Get the location of the city
-        location = await locator.geocode(city, timeout=10)
+load_dotenv()
+client = openrouteservice.Client(key=os.getenv('ORS_API_KEY'))
 
-        if not location:
-            return None
-        
-        # Return the city name and the latitude and longitude
-        return city, location.latitude, location.longitude
-    except Exception as e:
-        print(f"Error getting location for {city}: {e}")
+def get_city_coordinates(city: str) -> Optional[tuple[str, float, float]]:
+    """Fetches the coordinates for a city using the OpenRouteService API."""
+    result = client.pelias_search(text=city, size=1)
+
+    if not result['features']:
         return None
+    
+    # ORS returns coordinates as [longitude, latitude]
+    coordinates = result['features'][0]['geometry']['coordinates']
+    return city, float(coordinates[1]), float(coordinates[0])
 
-async def get_locations(cities: List[str]) -> List[Tuple[str, float, float]]:
-    locations = []
-    async with Nominatim(user_agent='algorithmics2024', adapter_factory=AioHTTPAdapter) as geolocator:
-        tasks = [get_location_for_city(city, geolocator) for city in cities]
-        results = await asyncio.gather(*tasks)
+def get_distance_time_cost_matrix(cities: list[tuple[str, float, float]]) -> list[list[tuple[float, float, float]]]:
+    """Fetches the distance and time matrix for a list of cities."""
+    coordinates = [[lon, lat] for _, lat, lon in cities]
 
-        # Filter out the None values
-        locations = [loc for loc in results if loc is not None]
+    matrices = client.distance_matrix(
+        locations=coordinates,
+        profile='driving-car',
+        metrics=['distance', 'duration'],
+        units='km'
+    )
 
-    return locations
+    # Combine distances, durations and cost to single matrix of tuples
+    matrix = []
+    for i in range(len(cities)):
+        row = []
+        for j in range(len(cities)):
+            # Get the distance
+            distance = float(matrices['distances'][i][j])
 
-async def get_route_details(source: Tuple[float, float], destination: Tuple[float, float]) -> Tuple[float, float, float]:
-    url = f'http://router.project-osrm.org/route/v1/driving/{source[1]},{source[0]};{destination[1]},{destination[0]}?overview=false'
+            # Get the duration in minutes
+            duration = float(matrices['durations'][i][j]) / 60
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status != 200:
-                    raise Exception(f'Error getting route details: {response.status}')
-                
-                data = await response.json()
-                if data['code'] != 'Ok' or not data['routes']:
-                    raise Exception(f'Error getting route details')
-                
-                route = data['routes'][0]
+            # Assume the cost of fuel is 1.5€/L and the car consumes 7L/100km
+            # Assume the cost of travel is 1€/hour
+            cost = distance * 1.5 * 7 / 100 + duration / 60
 
-                # Convert the distance from meters to kilometers
-                distance = route['distance'] / 1000
+            row.append((distance, duration, cost))
 
-                # Convert the duration from seconds to hours
-                time = route['duration'] / 3600
+        matrix.append(row)
 
-                # Assume an average cost of 1.5 euros per litre of fuel
-                # Assume an average fuel consumption of 8 litres per 100 km
-                # Calculate the cost based on the distance and fuel consumption
-                cost = distance * 1.5 * 8 / 100
-
-                return distance, time, cost
-    except Exception as e:
-        print(f"Error getting route details: {e}")
-        return None
+    return matrix
