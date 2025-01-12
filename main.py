@@ -1,19 +1,23 @@
-from graph import TravelGraph
-import asyncio
+from planner import TravelPlanner
 
-async def main():
-    cities = ['Paris', 'Berlin', 'London', 'Madrid', 'Rome']
+def main():
+    planner = TravelPlanner(load_from_file=True)
 
-    graph = TravelGraph()
-    await graph.create(cities)
+    print('Optimizing route from Oslo to Tallinn')
+    route, distance, duration, cost = planner.optimize_route_greedy(start='Oslo', end='Tallinn', destinations=['Stockholm', 'Helsinki', 'Vilnius'])
+    
+    print('Route:', ' -> '.join(route))
+    print(f'Distance: {distance:.2f} km')
+    print(f'Duration: {duration:.2f} hours')
+    print(f'Cost: {cost:.2f} €')
 
-    print(graph.cities)
-    print()
-    print(graph.routes)
-
-    print()
-
-    print(graph.routes['Paris'])
+    print('\nOptimizing route from Tallinn')
+    route, distance, duration, cost = planner.optimize_route_greedy(start='Tallinn', destinations=['Vienna', 'Barcelona', 'Berlin', 'Istanbul'])
+    
+    print('Route:', ' -> '.join(route))
+    print(f'Distance: {distance:.2f} km')
+    print(f'Duration: {duration:.2f} hours')
+    print(f'Cost: {cost:.2f} €')
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()
