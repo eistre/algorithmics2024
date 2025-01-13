@@ -1,5 +1,6 @@
 import math
 import random
+import heapq
 from enum import Enum
 from dataclasses import dataclass
 from itertools import permutations
@@ -296,3 +297,110 @@ class TravelPlanner:
         # Convert indices back to city names
         optimized_route = [self.cities[i] for i in best_solution]
         return optimized_route, best_metrics[0], best_metrics[1], best_metrics[2]
+    
+    def optimize_route_a_star(self, start: str, destinations: list[str] = None, 
+                         end: str = None,
+                         criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
+        """
+        Plan the optimal route using A* algorithm.
+        
+        Args:
+            start: Starting city
+            destinations: List of cities to visit (optional)
+            end: Ending city (optional, defaults to start if None)
+            criteria_weights: List of weights for distance, duration, and cost
+        
+        Returns:
+            Tuple containing:
+            - List of cities in optimized order
+            - Total distance
+            - Total duration
+            - Total cost
+        """
+        # Validate criteria weights
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
+            raise ValueError('Criteria weights must sum up to 1')
+
+        # Initialize cities to visit
+        if not destinations:
+            destinations = set(self.cities)
+        else:
+            destinations = set(destinations) | {start}
+            if end:
+                destinations.add(end)
+        
+        end_index = self.cities.index(end) if end else self.cities.index(start)
+        unvisited = set(i for i, city in enumerate(self.cities) if city in destinations)
+        start_index = self.cities.index(start)
+        
+        def calculate_edge_cost(from_idx: int, to_idx: int) -> float:
+            """Calculate weighted cost between two cities."""
+            distance = self.matrix[from_idx][to_idx][0]
+            duration = self.matrix[from_idx][to_idx][1]
+            cost = self.matrix[from_idx][to_idx][2]
+            
+            return (distance * criteria_weights[0].weight +
+                    duration * criteria_weights[1].weight +
+                    cost * criteria_weights[2].weight)
+        
+        def heuristic(current_idx: int, remaining: set[int]) -> float:
+            if not remaining:
+                return calculate_edge_cost(current_idx, end_index)
+            return min(calculate_edge_cost(current_idx, city) for city in remaining) + \
+                calculate_edge_cost(min(remaining, key=lambda x: calculate_edge_cost(x, end_index)), end_index)
+
+        class Node:
+            def __init__(self, city_idx: int, path: list[int], 
+                        unvisited: set[int], g_score: float):
+                self.city_idx = city_idx
+                self.path = path
+                self.unvisited = unvisited
+                self.g_score = g_score
+                self.h_score = heuristic(city_idx, unvisited)
+                self.f_score = g_score + self.h_score
+            
+            def __lt__(self, other):
+                return self.f_score < other.f_score
+
+        # Initialize priority queue with start node
+        start_node = Node(start_index, [start_index], 
+                        unvisited - {start_index}, 0)
+        queue = [start_node]
+        heapq.heapify(queue)
+        
+        while queue:
+            current = heapq.heappop(queue)
+            
+            # If all cities visited, find path to end
+            if not current.unvisited and current.city_idx == end_index:
+                # Calculate final metrics
+                total_distance = total_duration = total_cost = 0
+                path = current.path
+                
+                for i in range(len(path) - 1):
+                    from_idx = path[i]
+                    to_idx = path[i + 1]
+                    total_distance += self.matrix[from_idx][to_idx][0]
+                    total_duration += self.matrix[from_idx][to_idx][1]
+                    total_cost += self.matrix[from_idx][to_idx][2]
+                
+                return ([self.cities[i] for i in path],
+                        total_distance, total_duration, total_cost)
+            
+            # Generate successor nodes
+            for next_city in current.unvisited | {end_index}:
+                # Calculate actual cost to reach next_city
+                new_g_score = (current.g_score + 
+                            calculate_edge_cost(current.city_idx, next_city))
+                
+                new_path = current.path + [next_city]
+                new_unvisited = current.unvisited - {next_city}
+                
+                # Only add end_city if all others are visited
+                if next_city == end_index and new_unvisited:
+                    continue
+                    
+                new_node = Node(next_city, new_path, new_unvisited, new_g_score)
+                heapq.heappush(queue, new_node)
+        
+        raise ValueError("No valid route found")
