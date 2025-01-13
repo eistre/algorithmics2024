@@ -41,75 +41,105 @@ class TravelPlanner:
             self.coordinates: list[tuple[str, float, float]] = [get_city_coordinates(city) for city in cities]
             self.matrix: list[list[tuple[float, float, float]]] = get_distance_time_cost_matrix(self.coordinates)
 
-    def optimize_route_greedy(self, start: str, destinations: list[str] = None, end: str = None, criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> list[str]:
-        """Plan the optimal route from start to end by only selecting the next city with the lowest score."""
-        # Make sure criteria weights sum up to 1
+    def _get_route_cost(self, start: int, end: int, criteria_weights: list[CriteriaWeight]) -> float:
+        """Calculate the cost of traveling from start to end based on criteria weights."""
+        weights = {
+            Criteria.DISTANCE: self.matrix[start][end][0],
+            Criteria.TIME: self.matrix[start][end][1],
+            Criteria.COST: self.matrix[start][end][2]
+        }
+        return sum([weights[weight.criteria] * weight.weight for weight in criteria_weights])
+
+    def optimize_route_greedy(self, 
+                            start: str, 
+                            destinations: list[str] = None, 
+                            end: str = None, 
+                            criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
+        """
+        Plan the optimal route using a greedy algorithm.
+        
+        Args:
+            start: Starting city
+            destinations: List of cities to visit (if None, visit all cities)
+            end: End city (if None, end at the last unvisited city)
+            criteria_weights: Weights for distance, time, and cost optimization
+            
+        Returns:
+            Tuple containing:
+            - List of cities in optimal order
+            - Total distance in km
+            - Total duration in hours
+            - Total cost in euros
+        """
         if not sum([weight.weight for weight in criteria_weights]) == 1:
             raise ValueError('Criteria weights must sum up to 1')
-        
+
+        # Initialize metrics
         total_distance = 0
         total_duration = 0
         total_cost = 0
-
-        # Get the start and end city indices
+        
+        # Set up start/end indices and destinations
         start_index = self.cities.index(start)
         end_index = self.cities.index(end) if end else start_index
+        destinations = set(destinations)
 
-        # Keep track of visited cities
-        visited = [False] * len(self.cities)
-        visited[start_index] = True
-        visited[end_index] = True
-
-        # If destinations are provided, set others as visited
-        # TODO: This can probably be optimized
-        if not destinations:
-            destinations = set(self.cities)
+        if destinations:
+            destinations |= {start, self.cities[end_index]}
         else:
-            destinations = set(destinations) | {start, self.cities[end_index]}
+            destinations = set(self.cities)
 
-        for i in range(len(self.cities)):
-            if self.cities[i] not in destinations:
-                visited[i] = True
-
+        # Track visited cities
+        visited = [self.cities[i] not in destinations or i == start_index or i == end_index 
+                  for i in range(len(self.cities))]
+        
+        # Build path
         path = [start]
         current_index = start_index
+        
         while len(path) < len(destinations) - 1:
-            # Get the next best city to visit
-            next_index = None
-            next_score = float('inf')
-            for i in range(len(self.cities)):
-                if visited[i]:
+            # Find the unvisited city with lowest cost
+            best_cost = float('inf')
+            best_city_index = None
+            
+            # Check each possible city
+            for city_index in range(len(self.cities)):
+                if visited[city_index]:
                     continue
+                    
+                # Calculate cost to reach this city
+                cost = self._get_route_cost(current_index, city_index, criteria_weights)
+                
+                # Update best if this is better
+                if cost < best_cost:
+                    best_cost = cost
+                    best_city_index = city_index
+                    
+            next_index = best_city_index
 
-                # Calculate the score for the next city
-                score = sum([self.matrix[current_index][i][j] * weight.weight for j, weight in enumerate(criteria_weights)])
-                if score < next_score:
-                    next_index = i
-                    next_score = score
+            # Update metrics
+            distance, duration, cost = self.matrix[current_index][next_index]
+            total_distance += distance
+            total_duration += duration
+            total_cost += cost
 
-            # Update the total distance, duration, and cost
-            total_distance += self.matrix[current_index][next_index][0]
-            total_duration += self.matrix[current_index][next_index][1]
-            total_cost += self.matrix[current_index][next_index][2]
-
-            # Set the next city as visited and add it to the path
+            # Update state
             visited[next_index] = True
             path.append(self.cities[next_index])
             current_index = next_index
 
-        # Add the end city to the path
-        if end:
-            path.append(end)
-        else:
-            end_index = visited.index(False)
-            path.append(self.cities[end_index])
-
-        # Update the total distance, duration, and cost
-        total_distance += self.matrix[current_index][end_index][0]
-        total_duration += self.matrix[current_index][end_index][1]
-        total_cost += self.matrix[current_index][end_index][2]
+        # Handle final destination
+        final_city = end or self.cities[visited.index(False)]
+        path.append(final_city)
         
-        return path, total_distance, total_duration/60, total_cost
+        # Add final leg metrics
+        end_index = self.cities.index(final_city)
+        distance, duration, cost = self.matrix[current_index][end_index]
+        total_distance += distance
+        total_duration += duration
+        total_cost += cost
+
+        return path, total_distance, total_duration, total_cost
 
     def optimize_route_simulated_annealing(self, start: str, destinations: list[str] = None, 
                                         end: str = None, 
