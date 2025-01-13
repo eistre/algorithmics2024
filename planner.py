@@ -67,7 +67,7 @@ class TravelPlanner:
 
     def optimize_route_brute_force(self, 
                                 start: str, 
-                                destinations: list[str] = None, 
+                                destinations: list[str] = [], 
                                 end: str = None, 
                                 criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
         """
@@ -114,7 +114,7 @@ class TravelPlanner:
         
     def optimize_route_greedy(self, 
                             start: str, 
-                            destinations: list[str] = None, 
+                            destinations: list[str] = [], 
                             end: str = None, 
                             criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
         """

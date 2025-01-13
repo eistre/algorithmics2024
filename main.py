@@ -1,31 +1,41 @@
+import time
 from planner import TravelPlanner
 
 def main():
     planner = TravelPlanner(load_from_file=True)
 
     print('\nOptimizing route from Oslo to Barcelona: brute force')
-    route, distance, duration, cost = planner.optimize_route_brute_force(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen'])
-    
+    start = time.time()
+    route, distance, duration, cost = planner.optimize_route_brute_force(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'])
+    end = time.time()
+
     print('Route:', ' -> '.join(route))
     print(f'Distance: {distance:.2f} km')
     print(f'Duration: {duration:.2f} hours')
     print(f'Cost: {cost:.2f} €')
+    print(f'Execution time: {end - start:.5f} seconds')
 
     print('\nOptimizing route from Oslo to Barcelona: greedy')
-    route, distance, duration, cost = planner.optimize_route_greedy(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Barcelona', 'Berlin', 'Helsinki', 'Vilnius', 'Tallinn', 'Copenhagen'])
-    
+    start = time.time()
+    route, distance, duration, cost = planner.optimize_route_greedy(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'])
+    end = time.time()
+
     print('Route:', ' -> '.join(route))
     print(f'Distance: {distance:.2f} km')
     print(f'Duration: {duration:.2f} hours')
     print(f'Cost: {cost:.2f} €')
+    print(f'Execution time: {end - start:.5f} seconds')
 
     print('\nOptimizing route from Oslo to Barcelona: simulated annealing')
-    route, distance, duration, cost = planner.optimize_route_simulated_annealing(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen'])
-    
+    start = time.time()
+    route, distance, duration, cost = planner.optimize_route_simulated_annealing(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'])
+    end = time.time()
+
     print('Route:', ' -> '.join(route))
     print(f'Distance: {distance:.2f} km')
     print(f'Duration: {duration:.2f} hours')
     print(f'Cost: {cost:.2f} €')
+    print(f'Execution time: {end - start:.5f} seconds')
 
 if __name__ == '__main__':
     main()
