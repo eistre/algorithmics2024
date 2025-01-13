@@ -103,6 +103,11 @@ class TravelPlanner:
         else:
             end_index = visited.index(False)
             path.append(self.cities[end_index])
+
+        # Update the total distance, duration, and cost
+        total_distance += self.matrix[current_index][end_index][0]
+        total_duration += self.matrix[current_index][end_index][1]
+        total_cost += self.matrix[current_index][end_index][2]
         
         return path, total_distance, total_duration/60, total_cost
 
