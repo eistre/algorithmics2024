@@ -4,11 +4,19 @@ from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
-client = openrouteservice.Client(key=os.getenv('ORS_API_KEY'))
+
+_client = None
+
+def _get_client():
+    """Lazy load the OpenRouteService client whenever it's actually needed."""
+    global _client
+    if _client is None:
+        _client = openrouteservice.Client(key=os.getenv('ORS_API_KEY'))
+    return _client
 
 def get_city_coordinates(city: str) -> Optional[tuple[str, float, float]]:
     """Fetches the coordinates for a city using the OpenRouteService API."""
-    result = client.pelias_search(text=city, size=1)
+    result = _get_client().pelias_search(text=city, size=1)
 
     if not result['features']:
         return None
@@ -21,7 +29,7 @@ def get_distance_time_cost_matrix(cities: list[tuple[str, float, float]]) -> lis
     """Fetches the distance and time matrix for a list of cities."""
     coordinates = [[lon, lat] for _, lat, lon in cities]
 
-    matrices = client.distance_matrix(
+    matrices = _get_client.distance_matrix(
         locations=coordinates,
         profile='driving-car',
         metrics=['distance', 'duration'],
