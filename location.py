@@ -29,7 +29,7 @@ def get_distance_time_cost_matrix(cities: list[tuple[str, float, float]]) -> lis
     """Fetches the distance and time matrix for a list of cities."""
     coordinates = [[lon, lat] for _, lat, lon in cities]
 
-    matrices = _get_client.distance_matrix(
+    matrices = _get_client().distance_matrix(
         locations=coordinates,
         profile='driving-car',
         metrics=['distance', 'duration'],
@@ -44,12 +44,12 @@ def get_distance_time_cost_matrix(cities: list[tuple[str, float, float]]) -> lis
             # Get the distance
             distance = float(matrices['distances'][i][j])
 
-            # Get the duration in minutes
-            duration = float(matrices['durations'][i][j]) / 60
+            # Get the duration in hours
+            duration = float(matrices['durations'][i][j]) / 3600
 
             # Assume the cost of fuel is 1.5€/L and the car consumes 7L/100km
             # Assume the cost of travel is 1€/hour
-            cost = distance * 1.5 * 7 / 100 + duration / 60
+            cost = distance * 1.5 * 7 / 100 + duration
 
             row.append((distance, duration, cost))
 
