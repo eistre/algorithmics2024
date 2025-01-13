@@ -1,9 +1,10 @@
-from enum import Enum
-from dataclasses import dataclass
-from location import get_city_coordinates, get_distance_time_cost_matrix
-from sample_loader import load_cities_with_coordinates, load_distance_time_cost_matrix
 import math
 import random
+from enum import Enum
+from dataclasses import dataclass
+from itertools import permutations
+from location import get_city_coordinates, get_distance_time_cost_matrix
+from sample_loader import load_cities_with_coordinates, load_distance_time_cost_matrix
 
 class Criteria(Enum):
     """Criteria for route optimization."""
@@ -50,6 +51,67 @@ class TravelPlanner:
         }
         return sum([weights[weight.criteria] * weight.weight for weight in criteria_weights])
 
+    def _get_path_metrics(self, path: list[int]) -> tuple[float, float, float]:
+        """Calculate total distance, duration, and cost of a path."""
+        total_distance = 0
+        total_duration = 0
+        total_cost = 0
+        
+        for i in range(len(path) - 1):
+            distance, duration, cost = self.matrix[self.cities.index(path[i])][self.cities.index(path[i + 1])]
+            total_distance += distance
+            total_duration += duration
+            total_cost += cost
+            
+        return total_distance, total_duration, total_cost
+
+    def optimize_route_brute_force(self, 
+                                start: str, 
+                                destinations: list[str] = None, 
+                                end: str = None, 
+                                criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
+        """
+        Plan the optimal route using a brute-force algorithm.
+        
+        Args:
+            start: Starting city
+            destinations: List of cities to visit (if None, visit all cities)
+            end: End city (if None, end at the last unvisited city)
+            criteria_weights: Weights for distance, time, and cost optimization
+            
+        Returns:
+            Tuple containing:
+            - List of cities in optimal order
+            - Total distance in km
+            - Total duration in hours
+            - Total cost in euros
+        """
+        if not sum([weight.weight for weight in criteria_weights]) == 1:
+            raise ValueError('Criteria weights must sum up to 1')
+        
+        # Set up destinations
+        start = [start]
+        end = [end] if end else []
+        destinations = set(destinations) - set(start) - set(end) if set(destinations) else set(self.cities) - set(start) - set(end)
+
+        # Initialize starting path
+        best_cost = float('inf')
+        best_path = None
+
+        # Generate all permutations of destinations
+        for perm in permutations(destinations):
+            path = start + list(perm) + end
+            total_cost = sum([self._get_route_cost(self.cities.index(path[i]), self.cities.index(path[i + 1]), criteria_weights) for i in range(len(path) - 1)])
+            
+            if total_cost < best_cost:
+                best_cost = total_cost
+                best_path = path
+
+        # Calculate metrics
+        total_distance, total_duration, total_cost = self._get_path_metrics(best_path)
+
+        return best_path, total_distance, total_duration, total_cost
+        
     def optimize_route_greedy(self, 
                             start: str, 
                             destinations: list[str] = None, 
@@ -82,12 +144,7 @@ class TravelPlanner:
         # Set up start/end indices and destinations
         start_index = self.cities.index(start)
         end_index = self.cities.index(end) if end else start_index
-        destinations = set(destinations)
-
-        if destinations:
-            destinations |= {start, self.cities[end_index]}
-        else:
-            destinations = set(self.cities)
+        destinations = set(destinations) | {start, self.cities[end_index]} if set(destinations) else set(self.cities)
 
         # Track visited cities
         visited = [self.cities[i] not in destinations or i == start_index or i == end_index 
@@ -238,4 +295,4 @@ class TravelPlanner:
 
         # Convert indices back to city names
         optimized_route = [self.cities[i] for i in best_solution]
-        return optimized_route, best_metrics[0], best_metrics[1]/60, best_metrics[2]
+        return optimized_route, best_metrics[0], best_metrics[1], best_metrics[2]
