@@ -10,7 +10,7 @@ from sample_loader import load_cities_with_coordinates, load_distance_time_cost_
 class Criteria(Enum):
     """Criteria for route optimization."""
     DISTANCE = 'distance'
-    TIME = 'time'
+    DURATION = 'duration'
     COST = 'cost'
 
 @dataclass
@@ -26,7 +26,7 @@ class CriteriaWeight:
         
 DEFAULT_CRITERIA_WEIGHTS = [
     CriteriaWeight(Criteria.DISTANCE, 1),
-    CriteriaWeight(Criteria.TIME, 0),
+    CriteriaWeight(Criteria.DURATION, 0),
     CriteriaWeight(Criteria.COST, 0)
 ]
         
@@ -47,7 +47,7 @@ class TravelPlanner:
         """Calculate the cost of traveling from start to end based on criteria weights."""
         weights = {
             Criteria.DISTANCE: self.matrix[start][end][0],
-            Criteria.TIME: self.matrix[start][end][1],
+            Criteria.DURATION: self.matrix[start][end][1],
             Criteria.COST: self.matrix[start][end][2]
         }
         return sum([weights[weight.criteria] * weight.weight for weight in criteria_weights])
@@ -91,9 +91,11 @@ class TravelPlanner:
             raise ValueError('Criteria weights must sum up to 1')
         
         # Set up destinations
+        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+
+        # Convert start and end to lists
         start = [start]
         end = [end] if end else []
-        destinations = set(destinations) - set(start) - set(end) if set(destinations) else set(self.cities) - set(start) - set(end)
 
         # Initialize starting path
         best_cost = float('inf')
@@ -120,13 +122,13 @@ class TravelPlanner:
                             criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
         """
         Plan the optimal route using a greedy algorithm.
-        
+
         Args:
             start: Starting city
             destinations: List of cities to visit (if None, visit all cities)
             end: End city (if None, end at the last unvisited city)
             criteria_weights: Weights for distance, time, and cost optimization
-            
+
         Returns:
             Tuple containing:
             - List of cities in optimal order
@@ -134,68 +136,37 @@ class TravelPlanner:
             - Total duration in hours
             - Total cost in euros
         """
+        # Validate criteria weights
         if not sum([weight.weight for weight in criteria_weights]) == 1:
             raise ValueError('Criteria weights must sum up to 1')
-
-        # Initialize metrics
-        total_distance = 0
-        total_duration = 0
-        total_cost = 0
         
-        # Set up start/end indices and destinations
-        start_index = self.cities.index(start)
-        end_index = self.cities.index(end) if end else start_index
-        destinations = set(destinations) | {start, self.cities[end_index]} if set(destinations) else set(self.cities)
+        # Initialize destinations
+        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
 
-        # Track visited cities
-        visited = [self.cities[i] not in destinations or i == start_index or i == end_index 
-                  for i in range(len(self.cities))]
-        
-        # Build path
-        path = [start]
-        current_index = start_index
-        
-        while len(path) < len(destinations) - 1:
-            # Find the unvisited city with lowest cost
-            best_cost = float('inf')
-            best_city_index = None
-            
-            # Check each possible city
-            for city_index in range(len(self.cities)):
-                if visited[city_index]:
-                    continue
-                    
-                # Calculate cost to reach this city
-                cost = self._get_route_cost(current_index, city_index, criteria_weights)
-                
-                # Update best if this is better
-                if cost < best_cost:
-                    best_cost = cost
-                    best_city_index = city_index
-                    
-            next_index = best_city_index
+        # Initialize current city
+        current_city = start
+        path = [current_city]
 
-            # Update metrics
-            distance, duration, cost = self.matrix[current_index][next_index]
-            total_distance += distance
-            total_duration += duration
-            total_cost += cost
+        # Greedy algorithm
+        while destinations:
+            # Find the closest next city
+            current_city_index = self.cities.index(current_city)
+            next_destination = min(
+                destinations,
+                key=lambda city: self._get_route_cost(current_city_index, self.cities.index(city), criteria_weights)
+            )
 
             # Update state
-            visited[next_index] = True
-            path.append(self.cities[next_index])
-            current_index = next_index
+            path.append(next_destination)
+            current_city = next_destination
+            destinations.remove(next_destination)
 
-        # Handle final destination
-        final_city = end or self.cities[visited.index(False)]
-        path.append(final_city)
-        
-        # Add final leg metrics
-        end_index = self.cities.index(final_city)
-        distance, duration, cost = self.matrix[current_index][end_index]
-        total_distance += distance
-        total_duration += duration
-        total_cost += cost
+        # Add final end city
+        if end:
+            path.append(end)
+
+        # Calculate metrics
+        total_distance, total_duration, total_cost = self._get_path_metrics(path)
 
         return path, total_distance, total_duration, total_cost
 
@@ -404,3 +375,188 @@ class TravelPlanner:
                 heapq.heappush(queue, new_node)
         
         raise ValueError("No valid route found")
+    
+    def optimize_route_floyd_warshall(self,
+                                    start: str,
+                                    destinations: list[str] = [],
+                                    end: str = None,
+                                    criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
+        """
+        Plan the optimal route using the Floyd-Warshall algorithm.
+
+        Args:
+            start: Starting city
+            destinations: List of cities to visit (if None, visit all cities)
+            end: End city (if None, end at the last unvisited city)
+            criteria_weights: Weights for distance, time, and cost optimization
+
+        Returns:
+            Tuple containing:
+            - List of cities in optimal order
+            - Total distance in km
+            - Total duration in hours
+            - Total cost in euros
+        """
+        # Validate criteria weights
+        if not sum([weight.weight for weight in criteria_weights]) == 1:
+            raise ValueError('Criteria weights must sum up to 1')
+        
+        # Initialize destinations
+        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+
+        # Initialize distance and next city matrices
+        n = len(self.cities)
+        distance_matrix = [[float('inf')] * n for _ in range(n)]
+        next_city_matrix = [[None] * n for _ in range(n)]
+
+        # Initialize matrix with direct distances
+        for i in range(n):
+            distance_matrix[i][i] = 0
+            for j in range(n):
+                distance_matrix[i][j] = self._get_route_cost(i, j, criteria_weights)
+                next_city_matrix[i][j] = j
+
+        # Floyd-Warshall algorithm
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    if distance_matrix[i][k] + distance_matrix[k][j] < distance_matrix[i][j]:
+                        distance_matrix[i][j] = distance_matrix[i][k] + distance_matrix[k][j]
+                        next_city_matrix[i][j] = next_city_matrix[i][k]
+
+        # Optimize route according to new matrix with greedy algorithm
+        current_city = start
+        path = [current_city]
+
+        while destinations:
+            # Find the closest next city
+            current_city_index = self.cities.index(current_city)
+            next_destination = min(
+                destinations,
+                key=lambda city: distance_matrix[current_city_index][self.cities.index(city)]
+            )
+            next_destination_index = self.cities.index(next_destination)
+
+            # Reconstruct path
+            while current_city_index != next_destination_index:
+                current_city_index = next_city_matrix[current_city_index][next_destination_index]
+
+                # If a passed city is in the destinations, remove it
+                if self.cities[current_city_index] in destinations:
+                    destinations.remove(self.cities[current_city_index])
+                
+                path.append(self.cities[current_city_index])
+
+            # Update state
+            current_city = next_destination
+
+        # Add final end city
+        if end:
+            path.append(end)
+
+        # Calculate metrics
+        total_distance, total_duration, total_cost = self._get_path_metrics(path)
+
+        return path, total_distance, total_duration, total_cost
+
+    def optimize_route_dijkstra(self,
+                                start: str,
+                                destinations: list[str] = [],
+                                end: str = None,
+                                criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS) -> tuple[list[str], float, float, float]:
+        """
+        Plan the optimal route using Dijkstra's algorithm.
+
+        Args:
+            start: Starting city
+            destinations: List of cities to visit (if None, visit all cities)
+            end: End city (if None, end at the last unvisited city)
+            criteria_weights: Weights for distance, time, and cost optimization
+
+        Returns:
+            Tuple containing:
+            - List of cities in optimal order
+            - Total distance in km
+            - Total duration in hours
+            - Total cost in euros
+        """
+        # Validate criteria weights
+        if not sum([weight.weight for weight in criteria_weights]) == 1:
+            raise ValueError('Criteria weights must sum up to 1')
+        
+        # Initialize destinations
+        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+
+        # Dijkstra's algorithm
+        def dijkstra(source_idx: int) -> tuple[list[float], list[int]]:
+            """Find the shortest path from the source to all other nodes."""
+            n = len(self.cities)
+            distance = [float('inf')] * n
+            prev = [None] * n
+            visited = [False] * n
+
+            distance[source_idx] = 0
+
+            for _ in range(n):
+                # Find the vertex with the minimum distance
+                min_distance = float('inf')
+                min_idx = -1
+
+                for i in range(n):
+                    if not visited[i] and distance[i] < min_distance:
+                        min_distance = distance[i]
+                        min_idx = i
+
+                visited[min_idx] = True
+
+                # Update distances
+                for i in range(n):
+                    if not visited[i]:
+                        new_distance = distance[min_idx] + self._get_route_cost(min_idx, i, criteria_weights)
+                        if new_distance < distance[i]:
+                            distance[i] = new_distance
+                            prev[i] = min_idx
+
+            return distance, prev
+        
+        # Build the path using dijkstra's algorithm
+        current_city = start
+        path = [current_city]
+
+        while destinations:
+            # Get shortest path from current city
+            current_city_index = self.cities.index(current_city)
+            distances, previous = dijkstra(current_city_index)
+
+            # Find the closest next city
+            next_destination = min(
+                destinations,
+                key=lambda city: distances[self.cities.index(city)]
+            )
+            next_destination_index = self.cities.index(next_destination)
+
+            # Reconstruct path
+            temp_path = []
+            while next_destination_index is not None:
+                city = self.cities[next_destination_index]
+
+                # If a passed city is in the destinations, remove it
+                if city in destinations:
+                    destinations.remove(city)
+
+                temp_path.append(city)
+                next_destination_index = previous[next_destination_index]
+
+            # Update state
+            path += temp_path[::-1][1:]
+            current_city = next_destination
+        
+        # Add final end city
+        if end:
+            path.append(end)
+
+        # Calculate metrics
+        total_distance, total_duration, total_cost = self._get_path_metrics(path)
+
+        return path, total_distance, total_duration, total_cost
+    
