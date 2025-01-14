@@ -4,8 +4,8 @@ import heapq
 from enum import Enum
 from dataclasses import dataclass
 from itertools import permutations
-from location import get_city_coordinates, get_distance_time_cost_matrix
-from sample_loader import load_cities_with_coordinates, load_distance_time_cost_matrix
+from lib.location import get_city_coordinates, get_distance_time_cost_matrix
+from lib.sample_loader import load_cities_with_coordinates, load_distance_time_cost_matrix
 
 class Criteria(Enum):
     """Criteria for route optimization."""
@@ -67,6 +67,24 @@ class TravelPlanner:
             total_cost += cost
             
         return total_distance, total_duration, total_cost
+
+    def optimize_route(self, start: str, destinations: list[str] = [],
+                    end: str = None, criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS,
+                    algorithm: str = 'greedy') -> tuple[list[str], float, float, float]:
+        """Plan the optimal route using the specified algorithm."""
+        algorithm_map = {
+            'brute_force': self.optimize_route_brute_force,
+            'greedy': self.optimize_route_greedy,
+            'simulated_annealing': self.optimize_route_simulated_annealing,
+            'floyd_warshall': self.optimize_route_floyd_warshall,
+            'dijkstra': self.optimize_route_dijkstra,
+            'a_star': self.optimize_route_a_star
+        }
+
+        if algorithm not in algorithm_map:
+            raise ValueError('Invalid algorithm')
+        
+        return algorithm_map[algorithm](start, destinations, end, criteria_weights)
 
     def optimize_route_brute_force(self, 
                                 start: str, 
