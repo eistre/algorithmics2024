@@ -1,0 +1,17 @@
+GET http://localhost:8000/cities
+
+###
+
+GET http://localhost:8000/algorithms
+
+###
+
+POST http://localhost:8000/plan
+Content-Type: application/json
+
+{
+    "start": "Oslo",
+    "destinations": ["Stockholm", "Helsinki", "Barcelona", "Berlin", "Vilnius", "Tallinn", "Copenhagen", "Frankfurt", "Warsaw", "Rome"],
+    "end": "Barcelona",
+    "algorithm": "brute_force"
+}

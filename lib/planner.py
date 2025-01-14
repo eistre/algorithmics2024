@@ -34,6 +34,14 @@ class TravelPlanner:
     """Graph of cities and routes between them."""
     def __init__(self, cities: list[str] = [], load_from_file: bool = False):
         self.cities = cities
+        self.algorithm_map = {
+            'brute_force': self.optimize_route_brute_force,
+            'greedy': self.optimize_route_greedy,
+            'simulated_annealing': self.optimize_route_simulated_annealing,
+            'floyd_warshall': self.optimize_route_floyd_warshall,
+            'dijkstra': self.optimize_route_dijkstra,
+            'a_star': self.optimize_route_a_star
+        }
 
         if load_from_file:
             self.coordinates = load_cities_with_coordinates()
@@ -72,19 +80,12 @@ class TravelPlanner:
                     end: str = None, criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS,
                     algorithm: str = 'greedy') -> tuple[list[str], float, float, float]:
         """Plan the optimal route using the specified algorithm."""
-        algorithm_map = {
-            'brute_force': self.optimize_route_brute_force,
-            'greedy': self.optimize_route_greedy,
-            'simulated_annealing': self.optimize_route_simulated_annealing,
-            'floyd_warshall': self.optimize_route_floyd_warshall,
-            'dijkstra': self.optimize_route_dijkstra,
-            'a_star': self.optimize_route_a_star
-        }
+        
 
-        if algorithm not in algorithm_map:
+        if algorithm not in self.algorithm_map:
             raise ValueError('Invalid algorithm')
         
-        return algorithm_map[algorithm](start, destinations, end, criteria_weights)
+        return self.algorithm_map[algorithm](start, destinations, end, criteria_weights)
 
     def optimize_route_brute_force(self, 
                                 start: str, 

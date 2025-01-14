@@ -13,8 +13,8 @@ A travel route optimization system designed to help travelers plan their journey
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8 or higher
-- Required libraries (to be specified)
+- Python 3.12 or higher
+- REST Client for API testing (e.g. Postman, REST Client VSCode extension)
 
 ### Installation
 1. Clone the repository
@@ -35,6 +35,11 @@ A travel route optimization system designed to help travelers plan their journey
 3. Install dependencies
     ```bash
     pip install -r requirements.txt
+    ```
+
+4. To run the application
+    ```bash
+    fastapi dev
     ```
 
 ## Team Members
