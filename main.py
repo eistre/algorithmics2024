@@ -25,7 +25,7 @@ def get_cities():
 
 @app.get('/algorithms')
 def get_algorithms():
-    return PLANNER.algorithm_map.keys()
+    return list(PLANNER.algorithm_map.keys())
 
 @app.post('/plan')
 def plan_route(plan_request: PlanRequest):
