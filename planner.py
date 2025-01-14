@@ -43,6 +43,8 @@ class TravelPlanner:
             self.coordinates: list[tuple[str, float, float]] = [get_city_coordinates(city) for city in cities]
             self.matrix: list[list[tuple[float, float, float]]] = get_distance_time_cost_matrix(self.coordinates)
 
+        self.city_indices = {city: i for i, city in enumerate(self.cities)}
+
     def _get_route_cost(self, start: int, end: int, criteria_weights: list[CriteriaWeight]) -> float:
         """Calculate the cost of traveling from start to end based on criteria weights."""
         weights = {
@@ -59,7 +61,7 @@ class TravelPlanner:
         total_cost = 0
         
         for i in range(len(path) - 1):
-            distance, duration, cost = self.matrix[self.cities.index(path[i])][self.cities.index(path[i + 1])]
+            distance, duration, cost = self.matrix[self.city_indices[path[i]]][self.city_indices[path[i + 1]]]
             total_distance += distance
             total_duration += duration
             total_cost += cost
@@ -104,7 +106,7 @@ class TravelPlanner:
         # Generate all permutations of destinations
         for perm in permutations(destinations):
             path = start + list(perm) + end
-            total_cost = sum([self._get_route_cost(self.cities.index(path[i]), self.cities.index(path[i + 1]), criteria_weights) for i in range(len(path) - 1)])
+            total_cost = sum([self._get_route_cost(self.city_indices[path[i]], self.city_indices[path[i + 1]], criteria_weights) for i in range(len(path) - 1)])
             
             if total_cost < best_cost:
                 best_cost = total_cost
@@ -150,10 +152,10 @@ class TravelPlanner:
         # Greedy algorithm
         while destinations:
             # Find the closest next city
-            current_city_index = self.cities.index(current_city)
+            current_city_index = self.city_indices[current_city]
             next_destination = min(
                 destinations,
-                key=lambda city: self._get_route_cost(current_city_index, self.cities.index(city), criteria_weights)
+                key=lambda city: self._get_route_cost(current_city_index, self.city_indices[city], criteria_weights)
             )
 
             # Update state
@@ -192,8 +194,8 @@ class TravelPlanner:
                 destinations.add(end)
 
         # Set up start and end indices
-        start_index = self.cities.index(start)
-        end_index = self.cities.index(end) if end else start_index
+        start_index = self.city_indices[start]
+        end_index = self.city_indices[end] if end else start_index
 
         def calculate_route_score(route: list[int]) -> tuple[float, float, float, float]:
             """Calculate total score, distance, duration, and cost for a route."""
@@ -430,12 +432,12 @@ class TravelPlanner:
 
         while destinations:
             # Find the closest next city
-            current_city_index = self.cities.index(current_city)
+            current_city_index = self.city_indices[current_city]
             next_destination = min(
                 destinations,
-                key=lambda city: distance_matrix[current_city_index][self.cities.index(city)]
+                key=lambda city: distance_matrix[current_city_index][self.city_indices[city]]
             )
-            next_destination_index = self.cities.index(next_destination)
+            next_destination_index = self.city_indices[next_destination]
 
             # Reconstruct path
             while current_city_index != next_destination_index:
@@ -525,15 +527,15 @@ class TravelPlanner:
 
         while destinations:
             # Get shortest path from current city
-            current_city_index = self.cities.index(current_city)
+            current_city_index = self.city_indices[current_city]
             distances, previous = dijkstra(current_city_index)
 
             # Find the closest next city
             next_destination = min(
                 destinations,
-                key=lambda city: distances[self.cities.index(city)]
+                key=lambda city: distances[self.city_indices[city]]
             )
-            next_destination_index = self.cities.index(next_destination)
+            next_destination_index = self.city_indices[next_destination]
 
             # Reconstruct path
             temp_path = []
