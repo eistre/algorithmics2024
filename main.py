@@ -7,7 +7,7 @@ def main():
 
     print('\nOptimizing route from Oslo to Barcelona: brute force')
     start = time.time()
-    route, distance, duration, cost = planner.optimize_route_brute_force(start='Oslo', end=None, destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
+    route, distance, duration, cost = planner.optimize_route_brute_force(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
     end = time.time()
 
     print('Route:', ' -> '.join(route))
@@ -29,7 +29,7 @@ def main():
 
     print('\nOptimizing route from Oslo to Barcelona: simulated annealing')
     start = time.time()
-    route, distance, duration, cost = planner.optimize_route_simulated_annealing(start='Oslo', end=None, destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
+    route, distance, duration, cost = planner.optimize_route_simulated_annealing(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
     end = time.time()
 
     print('Route:', ' -> '.join(route))
@@ -40,7 +40,7 @@ def main():
 
     print('\nOptimizing route from Oslo to Barcelona: floyd warshall')
     start = time.time()
-    route, distance, duration, cost = planner.optimize_route_floyd_warshall(start='Oslo', end=None, destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
+    route, distance, duration, cost = planner.optimize_route_floyd_warshall(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
     end = time.time()
 
     print('Route:', ' -> '.join(route))
@@ -51,7 +51,7 @@ def main():
 
     print('\nOptimizing route from Oslo to Barcelona: dijkstra')
     start = time.time()
-    route, distance, duration, cost = planner.optimize_route_dijkstra(start='Oslo', end=None, destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
+    route, distance, duration, cost = planner.optimize_route_dijkstra(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
     end = time.time()
 
     print('Route:', ' -> '.join(route))
@@ -62,7 +62,7 @@ def main():
 
     print('\nOptimizing route from Oslo to Barcelona: A*')
     start = time.time()
-    route, distance, duration, cost = planner.optimize_route_a_star(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'])
+    route, distance, duration, cost = planner.optimize_route_a_star(start='Oslo', end='Barcelona', destinations=['Stockholm', 'Helsinki', 'Barcelona', 'Berlin', 'Vilnius', 'Tallinn', 'Copenhagen', 'Frankfurt', 'Warsaw', 'Rome'], criteria_weights=criteria_weights)
     end = time.time()
 
     print('Route:', ' -> '.join(route))

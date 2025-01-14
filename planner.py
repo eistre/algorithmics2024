@@ -89,7 +89,7 @@ class TravelPlanner:
             - Total duration in hours
             - Total cost in euros
         """
-        if not sum([weight.weight for weight in criteria_weights]) == 1:
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
         
         # Set up destinations
@@ -139,7 +139,7 @@ class TravelPlanner:
             - Total cost in euros
         """
         # Validate criteria weights
-        if not sum([weight.weight for weight in criteria_weights]) == 1:
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
@@ -182,7 +182,7 @@ class TravelPlanner:
         Plan the optimal route using simulated annealing algorithm.
         """
         # Validate criteria weights
-        if not sum([weight.weight for weight in criteria_weights]) == 1:
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
 
         # Initialize cities to visit
@@ -302,9 +302,9 @@ class TravelPlanner:
             if end:
                 destinations.add(end)
         
-        end_index = self.cities.index(end) if end else self.cities.index(start)
+        end_index = self.city_indices[end] if end else self.city_indices[start]
         unvisited = set(i for i, city in enumerate(self.cities) if city in destinations)
-        start_index = self.cities.index(start)
+        start_index = self.city_indices[start]
         
         def calculate_edge_cost(from_idx: int, to_idx: int) -> float:
             """Calculate weighted cost between two cities."""
@@ -400,7 +400,7 @@ class TravelPlanner:
             - Total cost in euros
         """
         # Validate criteria weights
-        if not sum([weight.weight for weight in criteria_weights]) == 1:
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
@@ -483,7 +483,7 @@ class TravelPlanner:
             - Total cost in euros
         """
         # Validate criteria weights
-        if not sum([weight.weight for weight in criteria_weights]) == 1:
+        if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
