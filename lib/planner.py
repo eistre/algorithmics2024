@@ -98,7 +98,7 @@ class TravelPlanner:
         Args:
             start: Starting city
             destinations: List of cities to visit (if None, visit all cities)
-            end: End city (if None, end at the last unvisited city)
+            end: Ending city (optional, defaults to start if None)
             criteria_weights: Weights for distance, time, and cost optimization
             
         Returns:
@@ -116,7 +116,7 @@ class TravelPlanner:
 
         # Convert start and end to lists
         start = [start]
-        end = [end] if end else []
+        end = [end] if end else start  # Return to start if no end specified
 
         # Initialize starting path
         best_cost = float('inf')
@@ -147,7 +147,7 @@ class TravelPlanner:
         Args:
             start: Starting city
             destinations: List of cities to visit (if None, visit all cities)
-            end: End city (if None, end at the last unvisited city)
+            end: Ending city (optional, defaults to start if None)
             criteria_weights: Weights for distance, time, and cost optimization
 
         Returns:
@@ -182,9 +182,9 @@ class TravelPlanner:
             current_city = next_destination
             destinations.remove(next_destination)
 
-        # Add final end city
-        if end:
-            path.append(end)
+        # Add final city (either end or return to start)
+        final_city = end if end else start
+        path.append(final_city)
 
         # Calculate metrics
         total_distance, total_duration, total_cost = self._get_path_metrics(path)
@@ -408,7 +408,7 @@ class TravelPlanner:
         Args:
             start: Starting city
             destinations: List of cities to visit (if None, visit all cities)
-            end: End city (if None, end at the last unvisited city)
+            end: Ending city (optional, defaults to start if None)
             criteria_weights: Weights for distance, time, and cost optimization
 
         Returns:
@@ -471,9 +471,9 @@ class TravelPlanner:
             # Update state
             current_city = next_destination
 
-        # Add final end city
-        if end:
-            path.append(end)
+        # Add final city (either end or return to start)
+        final_city = end if end else start
+        path.append(final_city)
 
         # Calculate metrics
         total_distance, total_duration, total_cost = self._get_path_metrics(path)
@@ -491,7 +491,7 @@ class TravelPlanner:
         Args:
             start: Starting city
             destinations: List of cities to visit (if None, visit all cities)
-            end: End city (if None, end at the last unvisited city)
+            end: Ending city (optional, defaults to start if None)
             criteria_weights: Weights for distance, time, and cost optimization
 
         Returns:
@@ -572,9 +572,9 @@ class TravelPlanner:
             path += temp_path[::-1][1:]
             current_city = next_destination
         
-        # Add final end city
-        if end:
-            path.append(end)
+        # Add final city (either end or return to start)
+        final_city = end if end else start
+        path.append(final_city)
 
         # Calculate metrics
         total_distance, total_duration, total_cost = self._get_path_metrics(path)
