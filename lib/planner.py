@@ -112,7 +112,7 @@ class TravelPlanner:
             raise ValueError('Criteria weights must sum up to 1')
         
         # Set up destinations
-        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+        destinations = set(destinations) - {start, end} or set(self.cities) - {start, end}
 
         # Convert start and end to lists
         start = [start]
@@ -162,7 +162,7 @@ class TravelPlanner:
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
-        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+        destinations = set(destinations) - {start, end} or set(self.cities) - {start, end}
 
         # Initialize current city
         current_city = start
@@ -423,7 +423,7 @@ class TravelPlanner:
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
-        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+        destinations = set(destinations) - {start, end} or set(self.cities) - {start, end}
 
         # Initialize distance and next city matrices
         n = len(self.cities)
@@ -506,7 +506,7 @@ class TravelPlanner:
             raise ValueError('Criteria weights must sum up to 1')
         
         # Initialize destinations
-        destinations = set(destinations) - {start, end} if set(destinations) else set(self.cities) - {start, end}
+        destinations = set(destinations) - {start, end} or set(self.cities) - {start, end}
 
         # Dijkstra's algorithm
         def dijkstra(source_idx: int) -> tuple[list[float], list[int]]:

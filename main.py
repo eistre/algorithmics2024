@@ -1,8 +1,8 @@
 from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 from lib.planner import TravelPlanner, CriteriaWeight, Criteria
-from lib.sample_loader import load_cities_with_coordinates
 
 class CriteriaRequest(BaseModel):
     distance: float = 1.0
@@ -11,17 +11,26 @@ class CriteriaRequest(BaseModel):
 
 class PlanRequest(BaseModel):
     start: str
+    end: str | None = None
     destinations: list[str] = []
     algorithm: Literal['brute_force', 'greedy', 'simulated_annealing', 'floyd_warshall', 'dijkstra', 'a_star'] = 'greedy'
     criteria: CriteriaRequest = CriteriaRequest()
 
 app = FastAPI()
-CITY_LIST = load_cities_with_coordinates()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
 PLANNER = TravelPlanner(load_from_file=True)
 
 @app.get('/cities')
 def get_cities():
-    return list(map(lambda city: city[0], CITY_LIST))
+    return list(map(lambda city: {'name': city[0], 'coordinates': city[1:]}, PLANNER.coordinates))
 
 @app.get('/algorithms')
 def get_algorithms():
@@ -31,6 +40,7 @@ def get_algorithms():
 def plan_route(plan_request: PlanRequest):
     route, distance, duration, cost = PLANNER.optimize_route(
         start=plan_request.start,
+        end=plan_request.end,
         destinations=plan_request.destinations,
         algorithm=plan_request.algorithm,
         criteria_weights=[
@@ -40,10 +50,8 @@ def plan_route(plan_request: PlanRequest):
         ]
     )
 
-    route_with_coordinates = [(city, next(city_data[1:] for city_data in CITY_LIST if city_data[0] == city)) for city in route]
-
     return {
-        'route': route_with_coordinates,
+        'route': route,
         'distance': distance,
         'duration': duration,
         'cost': cost
