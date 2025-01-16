@@ -74,8 +74,8 @@ export default function TravelPlanner() {
     }, [selectedAlgorithm, startCity, selectedDestinations, endCity, criteriaRequest, planResponse]);
 
     return (
-        <div className="container flex justify-center gap-2">
-            <Card className="w-1/4 pl-10">
+        <div className="container flex flex-col xl:flex-row justify-center gap-2">
+            <Card className="xl:w-1/4 flex flex-col justify-center gap-4">
                 <CardHeader>
                     <CardTitle>Travel Planner</CardTitle>
                     <CardDescription>Plan your optimal travel route</CardDescription>
@@ -268,9 +268,9 @@ export default function TravelPlanner() {
                     </CardContent>
                 )}
             </Card>
-            <Card className="w-3/4 pt-6 min-h-[90vh]">
+            <Card className="xl:w-3/4 pt-6 min-h-[90vh]">
                 <CardContent>
-                    <Map selectedDestinations={[...selectedDestinations, ...[startCity, endCity].filter(city => city !== null)]} planResponse={planResponse} startCity={startCity} />
+                    <Map cities={cities} selectedDestinations={[...selectedDestinations, ...[startCity, endCity].filter(city => city !== null)]} planResponse={planResponse} startCity={startCity} />
                 </CardContent>
             </Card>
         </div>

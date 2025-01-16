@@ -4,12 +4,13 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { City, PlanResponse } from '@/types/types';
 
 interface MapProps {
+  cities: City[];
   selectedDestinations: City[];
   planResponse: PlanResponse | null;
   startCity: City | null;
 }
 
-export function Map({ selectedDestinations, planResponse, startCity }: MapProps) {
+export function Map({ cities, selectedDestinations, planResponse, startCity }: MapProps) {
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
 
@@ -76,14 +77,10 @@ export function Map({ selectedDestinations, planResponse, startCity }: MapProps)
       if (map.current!.getLayer('route')) map.current!.removeLayer('route');
       if (map.current!.getSource('route')) map.current!.removeSource('route');
 
-      // See if there are more unique cities in the plan than selected destinations
-      const route_uniques = new Set(planResponse?.route)
-      const selected_uniques = new Set(selectedDestinations.map((c) => c.name))
-
-      if (!planResponse || selected_uniques.size < route_uniques.size) return;
+      if (!planResponse) return;
 
       const coordinates = planResponse.route.map((city) => {
-        const [latitude, longitude] = selectedDestinations.find((c) => c.name === city)!.coordinates;
+        const [latitude, longitude] = cities.find((c) => c.name === city)!.coordinates;
         return [longitude, latitude] as [number, number];
       });
 
@@ -114,7 +111,7 @@ export function Map({ selectedDestinations, planResponse, startCity }: MapProps)
         }
       });
 
-    }, [planResponse, selectedDestinations]);
+    }, [planResponse, cities]);
 
     return (<div ref={mapContainer} style={{ width: '100%', minHeight: '85vh' }} />);
 }
