@@ -192,44 +192,49 @@ class TravelPlanner:
         return path, total_distance, total_duration, total_cost
 
     def optimize_route_simulated_annealing(self, start: str, destinations: list[str] = None, 
-                                        end: str = None, 
-                                        criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS,
-                                        initial_temperature: float = 1000,
-                                        cooling_rate: float = 0.99,
-                                        iterations_per_temp: int = 100) -> tuple[list[str], float, float, float]:
+                                    end: str = None, 
+                                    criteria_weights: list[CriteriaWeight] = DEFAULT_CRITERIA_WEIGHTS,
+                                    initial_temperature: float = 1000,
+                                    cooling_rate: float = 0.99,
+                                    iterations_per_temp: int = 100) -> tuple[list[str], float, float, float]:
         """
         Plan the optimal route using simulated annealing algorithm.
+        Always starts from the given start city.
         """
         # Validate criteria weights
         if not math.isclose(sum(weight.weight for weight in criteria_weights), 1.0, rel_tol=1e-9):
             raise ValueError('Criteria weights must sum up to 1')
 
-        # Initialize cities to visit
-        if not destinations:
-            destinations = set(self.cities)
+        # Initialize destinations
+        if destinations is None:
+            destinations = list(set(self.cities) - {start})
         else:
-            destinations = set(destinations) | {start}
-            if end:
-                destinations.add(end)
+            destinations = list(set(destinations) - {start})
 
-        # Set up start and end indices
-        start_index = self.city_indices[start]
-        end_index = self.city_indices[end] if end else start_index
+        end = end if end else start
+        start_idx = self.city_indices[start]
+        end_idx = self.city_indices[end]
+
+        def get_neighbor(current_route: list[int]) -> list[int]:
+            """Generate a neighbor solution by swapping two random intermediate cities."""
+            if len(current_route) <= 3:
+                return current_route.copy()
+                
+            neighbor = current_route.copy()
+            # Only swap intermediate cities - NEVER touch index 0 (start city)
+            pos1, pos2 = random.sample(range(1, len(neighbor) - 1), 2)
+            neighbor[pos1], neighbor[pos2] = neighbor[pos2], neighbor[pos1]
+            return neighbor
 
         def calculate_route_score(route: list[int]) -> tuple[float, float, float, float]:
             """Calculate total score, distance, duration, and cost for a route."""
             total_distance = total_duration = total_cost = 0
             
             for i in range(len(route) - 1):
-                current_city = route[i]
-                next_city = route[i + 1]
+                total_distance += self.matrix[route[i]][route[i + 1]][0]
+                total_duration += self.matrix[route[i]][route[i + 1]][1]
+                total_cost += self.matrix[route[i]][route[i + 1]][2]
                 
-                # Add up individual metrics
-                total_distance += self.matrix[current_city][next_city][0]
-                total_duration += self.matrix[current_city][next_city][1]
-                total_cost += self.matrix[current_city][next_city][2]
-                
-            # Calculate weighted score
             total_score = (
                 total_distance * criteria_weights[0].weight +
                 total_duration * criteria_weights[1].weight +
@@ -238,28 +243,11 @@ class TravelPlanner:
             
             return total_score, total_distance, total_duration, total_cost
 
-        def get_neighbor(current_route: list[int]) -> list[int]:
-            """Generate a neighbor solution by swapping two random cities."""
-            # Don't modify start and end positions
-            if len(current_route) <= 3:  # Not enough cities to swap
-                return current_route.copy()
-                
-            neighbor = current_route.copy()
-            # Select two random positions (excluding start and end cities)
-            pos1, pos2 = random.sample(range(1, len(neighbor) - 1), 2)
-            neighbor[pos1], neighbor[pos2] = neighbor[pos2], neighbor[pos1]
-            return neighbor
-
-        # Create initial solution
-        city_indices = [i for i in range(len(self.cities)) if self.cities[i] in destinations]
-        if start_index in city_indices and start_index != city_indices[0]:
-            city_indices.remove(start_index)
-            city_indices.insert(0, start_index)
-        if end_index in city_indices and end_index != city_indices[-1]:
-            city_indices.remove(end_index)
-            city_indices.append(end_index)
-
-        current_solution = city_indices
+        # Create initial solution - ALWAYS start with start_idx
+        dest_indices = [self.city_indices[city] for city in destinations]
+        random.shuffle(dest_indices)
+        current_solution = [start_idx] + dest_indices + [end_idx]
+        
         current_score, current_distance, current_duration, current_cost = calculate_route_score(current_solution)
         best_solution = current_solution.copy()
         best_score = current_score
@@ -267,13 +255,12 @@ class TravelPlanner:
 
         # Simulated annealing process
         temperature = initial_temperature
-        
         while temperature > 1:
             for _ in range(iterations_per_temp):
+                # get_neighbor NEVER modifies the start city
                 neighbor = get_neighbor(current_solution)
                 new_score, new_distance, new_duration, new_cost = calculate_route_score(neighbor)
                 
-                # Calculate acceptance probability
                 delta = new_score - current_score
                 if delta < 0 or random.random() < math.exp(-delta / temperature):
                     current_solution = neighbor
