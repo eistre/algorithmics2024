@@ -1,6 +1,8 @@
+import asyncio
 from typing import Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from lib.planner import TravelPlanner, CriteriaWeight, Criteria
 
@@ -37,18 +39,24 @@ def get_algorithms():
     return list(PLANNER.algorithm_map.keys())
 
 @app.post('/plan')
-def plan_route(plan_request: PlanRequest):
-    route, distance, duration, cost = PLANNER.optimize_route(
-        start=plan_request.start,
-        end=plan_request.end,
-        destinations=plan_request.destinations,
-        algorithm=plan_request.algorithm,
-        criteria_weights=[
-            CriteriaWeight(Criteria.DISTANCE, plan_request.criteria.distance),
-            CriteriaWeight(Criteria.DURATION, plan_request.criteria.duration),
-            CriteriaWeight(Criteria.COST, plan_request.criteria.cost)
-        ]
-    )
+async def plan_route(plan_request: PlanRequest):
+    try:
+        route, distance, duration, cost = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, lambda: PLANNER.optimize_route(
+                start=plan_request.start,
+                end=plan_request.end,
+                destinations=plan_request.destinations,
+                algorithm=plan_request.algorithm,
+                criteria_weights=[
+                    CriteriaWeight(Criteria.DISTANCE, plan_request.criteria.distance),
+                    CriteriaWeight(Criteria.DURATION, plan_request.criteria.duration),
+                    CriteriaWeight(Criteria.COST, plan_request.criteria.cost)
+                ]
+            )),
+            timeout=60.0
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=408, detail='Request timed out after 60 seconds')
 
     return {
         'route': route,

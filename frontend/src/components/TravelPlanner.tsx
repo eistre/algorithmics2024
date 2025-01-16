@@ -1,5 +1,6 @@
 import { Map } from './Map';
 import { cn } from '@/lib/utils';
+import { AxiosError } from 'axios';
 import { Button } from './ui/button';
 import { useEffect, useState } from 'react';
 import { CitySelector } from './CitySelector';
@@ -39,8 +40,7 @@ export default function TravelPlanner() {
             try {
                 const cities = await getCities();
                 setCities(cities.sort((a, b) => a.name.localeCompare(b.name)));
-            } catch (error) {
-                console.error('Failed to fetch cities:', error);
+            } catch {
                 setError('Failed to fetch cities. Please try again.');
             }
         }
@@ -49,8 +49,7 @@ export default function TravelPlanner() {
             try {
                 const algorithms = await getAlgorithms();
                 setAlgorithms(algorithms);
-            } catch (error) {
-                console.error('Failed to fetch algorithms:', error);
+            } catch {
                 setError('Failed to fetch algorithms. Please try again.');
             }
         }
@@ -205,7 +204,7 @@ export default function TravelPlanner() {
                 <CardFooter className='gap-4'>
                     <Button
                         className='w-[150px]'
-                        disabled={selectedAlgorithm === null || startCity === null}
+                        disabled={selectedAlgorithm === null || startCity === null || loading}
                         onClick={async () => {
                             if (selectedDestinations.filter(city => city !== startCity && city !== endCity).length === 0) {
                                 setSelectedDestinations(cities);
@@ -222,12 +221,12 @@ export default function TravelPlanner() {
                             try {
                                 setLoading(true);
                                 const planResponse = await optimizeRoute(planRequest);
-                                setLoading(false);
                                 setPlanResponse(planResponse);
                             } catch (error) {
-                                console.error('Failed to optimize route:', error);
-                                setError('Failed to optimize route. Please try again.');
+                                setError((error as AxiosError<{detail: string}>).response?.data?.detail || 'Failed to optimize route. Please try again.');
                             }
+
+                            setLoading(false);
                         }}
                     >
                         {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
