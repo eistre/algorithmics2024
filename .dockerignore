@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.env.*
+
+# Development
+.vscode/
+.idea/
+*.swp
+.DS_Store
+experiments.ipynb
+
+# Frontend
+frontend/
+node_modules/
+
+# Documentation and tests
+README.md
+requests.http
+
+# Docker
+Dockerfile
+.dockerignore

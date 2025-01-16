@@ -2,7 +2,7 @@ import { City, PlanRequest, PlanResponse } from '../types/types';
 import axios from 'axios';
 
 export async function getCities(): Promise<City[]> {
-  const cities = await axios.get<City[]>('http://localhost:8000/cities', {
+  const cities = await axios.get<City[]>('/api/cities', {
     headers: {
       'Content-Type': 'application/json'
     }
@@ -12,7 +12,7 @@ export async function getCities(): Promise<City[]> {
 }
 
 export async function getAlgorithms(): Promise<string[]> {
-  const algorithms = await axios.get<string[]>('http://localhost:8000/algorithms', {
+  const algorithms = await axios.get<string[]>('/api/algorithms', {
     headers: {
       'Content-Type': 'application/json'
     }
@@ -22,7 +22,7 @@ export async function getAlgorithms(): Promise<string[]> {
 }
 
 export async function optimizeRoute(planRequest: PlanRequest): Promise<PlanResponse> {
-  const planResponse = await axios.post<PlanResponse>('http://localhost:8000/plan', planRequest, {
+  const planResponse = await axios.post<PlanResponse>('/api/plan', planRequest, {
     headers: {
       'Content-Type': 'application/json'
     }

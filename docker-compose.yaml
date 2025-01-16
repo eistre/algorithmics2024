@@ -1,0 +1,20 @@
+services:
+  travel-planner-api:
+    build: .
+    expose:
+      - "8000"
+    networks:
+      - app-network
+
+  travel-plannel-frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    networks:
+      - app-network
+    depends_on:
+      - travel-planner-api
+
+networks:
+  app-network:
+    driver: bridge

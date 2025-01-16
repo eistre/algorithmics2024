@@ -1,0 +1,22 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build output
+dist
+build
+
+# Version control
+.git
+.gitignore
+
+# Development
+.env
+.env.*
+*.local
+.vscode
+.idea
+
+# System files
+.DS_Store
+Thumbs.db
